@@ -45,7 +45,18 @@ class LogicFromSite(object):
     def get_list(site_instance, board, query=None, page=1, max_id=0, max_count=999, scheduler_instance=None):
         try:
             LogicFromSite.set_proxy(scheduler_instance)
-
+            if 'LOGIN_INFO' in site_instance.info:
+                login_dict = site_instance.info['LOGIN_INFO']
+                loginurl = login_dict['LOGIN_URL']
+                logindata = {
+                    'mb_id': login_dict['USERNAME'],
+                    'mb_password': login_dict['PASSWORD']
+                }
+                response = LogicFromSite.session.post(loginurl, data=logindata)
+                if response.status_code == 200:
+                    logger.debug('로그인 성공')
+                else:
+                    logger.debug('로그인 실패')
             max_page = int(page) if page is not None else 1
             xpath_list_tag_name = 'XPATH_LIST_TAG'
             if 'BOARD_LIST' in site_instance.info:
@@ -266,6 +277,11 @@ class LogicFromSite(object):
                     match = re.compile(site_instance.info['MAGNET_REGAX'][0]).findall(html)
                     for m in match:
                         tmp = (site_instance.info['MAGNET_REGAX'][1] % m).lower()
+                        if 'MAGNET_REGAX_REPLACE' in site_instance.info['EXTRA']:
+                            tmp = re.sub('\'', '', tmp)
+                            tmp = re.sub('\(', '', tmp)
+                            tmp = re.sub('\)', '', tmp)
+                            tmp = re.sub('buymagnet0', 'magnet:?xt=urn:btih:', tmp)
                         if tmp not in magnet_list:
                             magnet_list.append(tmp)
                     #logger.debug('MARNET : %s', magnet_list)
